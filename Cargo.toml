@@ -1,0 +1,14 @@
+[package]
+name = "hashcheck"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.74"
+description = "Simple, security-focused checksum verification CLI"
+license = "MIT"
+repository = "https://github.com/BLCCoreStudio/HashCheck"
+readme = "README.md"
+keywords = ["checksum", "hash", "sha256", "sha512", "cli"]
+categories = ["command-line-utilities"]
+
+[dependencies]
+sha2 = "0.10"
