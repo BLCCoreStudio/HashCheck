@@ -21,5 +21,7 @@ jobs:
         uses: BLCCoreStudio/RepoDoctor@v0.1.2
         with:
           path: .
+          fail-under: "80"
+          fail-on: error
           format: terminal
           language: en
