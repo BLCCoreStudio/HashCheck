@@ -178,9 +178,12 @@ fn validate_manifest_entry_path(value: &str) -> Result<(), String> {
 
     let path = Path::new(value);
     if path.is_absolute()
-        || path
-            .components()
-            .any(|component| matches!(component, Component::ParentDir | Component::RootDir | Component::Prefix(_)))
+        || path.components().any(|component| {
+            matches!(
+                component,
+                Component::ParentDir | Component::RootDir | Component::Prefix(_)
+            )
+        })
     {
         return Err(format!(
             "manifest entry '{value}' must stay inside the manifest directory"
