@@ -1,8 +1,16 @@
 # HashCheck
 
+**Calculate and verify SHA-256 and SHA-512 checksums.**
+
 HashCheck is a small, security-focused command-line tool for calculating and verifying SHA-256 and SHA-512 checksums.
 
 It is Linux-first, uses portable Rust standard-library file I/O, and has no telemetry, backend, account system, or network functionality.
+
+## Status
+
+**HashCheck v0.1.0 is available as the first public release.**
+
+A prebuilt Linux x86_64 archive and SHA-256 checksum are available on the [GitHub Releases page](https://github.com/BLCCoreStudio/HashCheck/releases/tag/v0.1.0).
 
 ## Features
 
@@ -13,6 +21,23 @@ It is Linux-first, uses portable Rust standard-library file I/O, and has no tele
 - Streaming hashing: files are processed in fixed-size chunks instead of being loaded fully into RAM
 - Clear exit codes for scripts and automation
 - No file contents are printed
+
+## Install on Linux x86_64
+
+Download these files from the [v0.1.0 release](https://github.com/BLCCoreStudio/HashCheck/releases/tag/v0.1.0):
+
+- `hashcheck-v0.1.0-x86_64-unknown-linux-gnu.tar.gz`
+- `hashcheck-v0.1.0-x86_64-unknown-linux-gnu.tar.gz.sha256`
+
+Verify and extract:
+
+```bash
+sha256sum -c hashcheck-v0.1.0-x86_64-unknown-linux-gnu.tar.gz.sha256
+tar -xzf hashcheck-v0.1.0-x86_64-unknown-linux-gnu.tar.gz
+./hashcheck --version
+```
+
+You can optionally place `hashcheck` somewhere on your `PATH`, such as `~/.local/bin`.
 
 ## Usage
 
@@ -52,12 +77,13 @@ Expected hashes may use uppercase or lowercase hexadecimal characters.
 
 ## Build from source
 
-Requires stable Rust.
+Requires Rust 1.74 or newer.
 
 ```bash
 git clone https://github.com/BLCCoreStudio/HashCheck.git
 cd HashCheck
-cargo build --release
+cargo build --release --locked
+./target/release/hashcheck --version
 ```
 
 The binary will be at `target/release/hashcheck` on Linux/macOS and `target\release\hashcheck.exe` on Windows.
@@ -66,8 +92,8 @@ The binary will be at `target/release/hashcheck` on Linux/macOS and `target\rele
 
 ```bash
 cargo fmt --all -- --check
-cargo clippy --all-targets --all-features -- -D warnings
-cargo test --all-features
+cargo clippy --locked --all-targets --all-features -- -D warnings
+cargo test --locked --all-features
 ```
 
 GitHub Actions runs formatting, Clippy with warnings denied, tests on Linux, and tests on Windows/macOS.
@@ -85,3 +111,5 @@ Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+Built by **BLC Core Studio**.
