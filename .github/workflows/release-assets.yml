@@ -1,0 +1,58 @@
+name: Release Assets
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/release-assets.yml
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  linux-x86_64:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust 1.74
+        uses: dtolnay/rust-toolchain@1.74.0
+        with:
+          components: clippy,rustfmt
+
+      - name: Validate
+        run: |
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --all-targets
+
+      - name: Resolve release tag
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            tag="${{ github.event.release.tag_name }}"
+          else
+            tag="$(gh release view --json tagName --jq .tagName)"
+          fi
+          test -n "$tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Build and package
+        run: |
+          cargo build --release
+          asset="hashcheck-${{ steps.release.outputs.tag }}-x86_64-unknown-linux-gnu.tar.gz"
+          tar -C target/release -czf "$asset" hashcheck
+          sha256sum "$asset" > "$asset.sha256"
+          echo "ASSET=$asset" >> "$GITHUB_ENV"
+
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ steps.release.outputs.tag }}" "$ASSET" "$ASSET.sha256" --clobber
