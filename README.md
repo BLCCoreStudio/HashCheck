@@ -2,7 +2,7 @@
 
 **Calculate and verify SHA-256/SHA-512 checksums, plus deterministic SHA-256 release manifests.**
 
-HashCheck is a small, security-focused command-line tool for calculating and verifying checksums. The current development line also integrates deterministic multi-file release-manifest creation and verification, consolidating the useful core direction previously explored by ReleaseSeal.
+HashCheck is a small, security-focused CLI for checking file integrity and verifying that files match expected hashes. The current development line also supports deterministic multi-file release manifests for verifying groups of release artifacts.
 
 It is Linux-first, uses streaming file I/O, and has no telemetry, backend, account system, or network functionality.
 
