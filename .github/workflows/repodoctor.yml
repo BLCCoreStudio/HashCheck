@@ -15,10 +15,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
-
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Run RepoDoctor
-        uses: BLCCoreStudio/RepoDoctor@v0.1.3
+        uses: BLCCoreStudio/RepoDoctor@60eec782d18c5a5efd696f20e730aee7ce08165e # v0.1.3
         with:
           path: .
           fail-under: "80"
