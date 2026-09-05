@@ -1,0 +1,92 @@
+name: Competitive benchmark
+
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/benchmark-competitive.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sha256:
+    name: HashCheck vs sha256sum vs OpenSSL
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install benchmark tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes hyperfine openssl time
+
+      - name: Build release binary
+        run: cargo build --release --locked
+
+      - name: Create deterministic 256 MiB fixture
+        run: dd if=/dev/zero of=/tmp/hashcheck-bench.bin bs=1M count=256 status=none
+
+      - name: Verify equivalent SHA-256 work
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected="$(sha256sum /tmp/hashcheck-bench.bin | awk '{print $1}')"
+          ./target/release/hashcheck /tmp/hashcheck-bench.bin --expect "$expected" >/dev/null
+          openssl dgst -sha256 /tmp/hashcheck-bench.bin | grep -qi "$expected"
+          printf 'expected_sha256=%s\n' "$expected"
+
+      - name: Benchmark
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p benchmark-results
+          {
+            echo "runner=ubuntu-24.04"
+            echo "kernel=$(uname -srmo)"
+            echo "cpu=$(lscpu | awk -F: '/Model name/{gsub(/^[ \t]+/,"",$2); print $2; exit}')"
+            echo "hashcheck=$(./target/release/hashcheck --version)"
+            echo "sha256sum=$(sha256sum --version | head -n1)"
+            echo "openssl=$(openssl version)"
+            echo "hyperfine=$(hyperfine --version | head -n1)"
+          } > benchmark-results/environment.txt
+
+          hyperfine --warmup 2 --runs 10 \
+            --export-json benchmark-results/sha256.json \
+            --export-markdown benchmark-results/sha256.md \
+            --command-name 'HashCheck' './target/release/hashcheck /tmp/hashcheck-bench.bin >/dev/null' \
+            --command-name 'GNU sha256sum' 'sha256sum /tmp/hashcheck-bench.bin >/dev/null' \
+            --command-name 'OpenSSL dgst' 'openssl dgst -sha256 /tmp/hashcheck-bench.bin >/dev/null'
+
+          /usr/bin/time -v ./target/release/hashcheck /tmp/hashcheck-bench.bin >/dev/null 2>benchmark-results/hashcheck-time-v.txt
+          /usr/bin/time -v sha256sum /tmp/hashcheck-bench.bin >/dev/null 2>benchmark-results/sha256sum-time-v.txt
+          /usr/bin/time -v openssl dgst -sha256 /tmp/hashcheck-bench.bin >/dev/null 2>benchmark-results/openssl-time-v.txt
+          cat benchmark-results/sha256.md
+
+      - name: Publish summary
+        if: always()
+        run: |
+          if [[ -f benchmark-results/environment.txt ]]; then
+            echo '## Environment' >> "$GITHUB_STEP_SUMMARY"
+            echo '```text' >> "$GITHUB_STEP_SUMMARY"
+            cat benchmark-results/environment.txt >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [[ -f benchmark-results/sha256.md ]]; then
+            echo '## SHA-256 throughput' >> "$GITHUB_STEP_SUMMARY"
+            cat benchmark-results/sha256.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload raw evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: hashcheck-competitive-benchmark-${{ github.sha }}
+          path: benchmark-results/
+          if-no-files-found: error
+          retention-days: 90
